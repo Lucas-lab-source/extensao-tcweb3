@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Controle de Versão Simplificado</title>
+  <script src="https://unpkg.com/trimble-connect-project-workspace-api"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h2>Controle de Versão Simplificado</h2>
+    <input type="text" id="qrInput" placeholder="Digite ou escaneie QR Code">
+    <button id="btnGerarPDF">Gerar PDF</button>
+    <button id="btnVerificar">Verificar QR Code</button>
+  </div>
+
+  <canvas id="qrCode" style="display:none;"></canvas>
+
+  <script type="module">
+    import * as Extensions from "trimble-connect-project-workspace-api";
+    import { jsPDF } from "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+
+    async function iniciarExtensao() {
+      const API = await Extensions.connect(window.parent, ()=>{}, 30000);
+      const project = await API.project.getCurrentProject();
+      const versaoAtual = project.version || "1.0";
+
+      const qr = new QRious({ element: document.getElementById('qrCode'), value: project.id + "|" + versaoAtual, size: 150 });
+
+      document.getElementById("btnGerarPDF").onclick = () => {
+        const pdf = new jsPDF();
+        pdf.text(`Projeto: ${project.name}`, 20, 20);
+        pdf.text(`Versão: ${versaoAtual}`, 20, 30);
+        pdf.addImage(qr.toDataURL(), 'PNG', 160, 10, 40, 40);
+        pdf.save(`${project.name}-versao.pdf`);
+      };
+
+      document.getElementById("btnVerificar").onclick = () => {
+        const input = document.getElementById("qrInput").value.trim();
+        if (input === project.id + "|" + versaoAtual) alert("✅ Planta atualizada");
+        else alert("❌ Planta desatualizada");
+      };
+    }
+
+    iniciarExtensao();
+  </script>
+</body>
+</html>
